@@ -100,12 +100,14 @@
 #'   register routines with
 #'   `tools::package_native_routine_registration_skeleton()` before building
 #'   the package. It is ignored if package does not need compilation.
-#' @param clean_doc If `TRUE`, clean the files in `inst/doc` before building
-#'   the package. If `NULL` and the `Config/build/clean-inst-doc` entry is
-#'   present in `DESCRIPTION`, then that is used. Otherwise, if `NULL`,
-#'   and interactive, ask to remove the files prior to cleaning. In most
-#'   cases cleaning the files is the correct behavior to avoid stale
-#'   vignette outputs in the built package.
+#' @param clean_doc If `TRUE`, clean the existing documents by deleting the
+#'   entire `inst/doc` directory before building the package. If `FALSE`,
+#'   leave `inst/doc` untouched. If `NULL`
+#'   (the default), first the `Config/build/clean-inst-doc` entry in
+#'   `DESCRIPTION` is used if present, otherwise if the session is
+#'   interactive the user is prompted for what to do, if non-interactive
+#'   the directory is deleted. In most cases cleaning the files is the
+#'   correct behavior to avoid stale vignette outputs in the built package.
 #' @export
 #' @return a string giving the location (including file name) of the built
 #'  package
@@ -310,18 +312,18 @@ build_setup_source <- function(
   if (build_vignettes && (is.null(clean_doc) || isTRUE(clean_doc))) {
     doc_dir <- file.path(path, "inst", "doc")
     if (dir.exists(doc_dir)) {
-      if (is.null(clean_doc) && interactive()) {
+      delete <- TRUE
+      if (is.null(clean_doc) && is_interactive()) {
         message(
           "Building the package will delete...\n  '",
           doc_dir,
-          "'\nAre you sure?"
+          "'\nDelete it and build ('Yes'), or keep it and build ('No')?"
         )
-        res <- utils::menu(c("Yes", "No"))
-        if (res == 2) {
-          return()
-        }
+        delete <- utils::menu(c("Yes", "No")) == 1
       }
-      unlink(doc_dir, recursive = TRUE)
+      if (delete) {
+        unlink(doc_dir, recursive = TRUE)
+      }
     }
   }
 
